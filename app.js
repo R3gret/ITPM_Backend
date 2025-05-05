@@ -8,7 +8,8 @@ const morgan = require('morgan');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security middlewares
+
+// Security middlewares (same as first code)
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -17,7 +18,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
+// Rate limiting (same as first code)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -28,14 +29,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Logging
+// Logging (same as first code)
 app.use(morgan('combined'));
 
-// Body parsing
+// Body parsing (same as first code)
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// Health check endpoint
+// Health check endpoint (same as first code)
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy',
@@ -44,18 +45,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api/users', require('./src/routes/users'));
+  // API routes
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, '../dist')));
+  app.use('/api/users', require('./src/routes/users'));
 
-// Fixed catch-all route for client-side routing
-app.get(/\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
-
-// 404 handler
+// 404 handler (same as first code)
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Not found',
@@ -64,7 +58,8 @@ app.use((req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-// Error handler
+
+// Error handler (same as first code)
 app.use((err, req, res, next) => {
   console.error('Error:', {
     message: err.message,
@@ -81,14 +76,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Start server (same as first code)
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`CORS allowed origin: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 });
 
-// Handle unhandled promise rejections
+// Handle unhandled promise rejections (same as first code)
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', {
     error: err.message,
@@ -98,7 +93,7 @@ process.on('unhandledRejection', (err) => {
   server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions (same as first code)
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', {
     error: err.message,
