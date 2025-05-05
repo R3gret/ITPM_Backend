@@ -47,16 +47,15 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/users', require('./src/routes/users'));
 
-// Serve static files from React build directory
+// Serve static files from React build
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// Handle React routing - return all requests to React app
-// This should come AFTER API routes but BEFORE 404 handler
-app.get('*', (req, res) => {
+// Fixed catch-all route for client-side routing
+app.get(/\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-// 404 handler - will only trigger if no other routes match
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Not found',
@@ -65,7 +64,6 @@ app.use((req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', {
