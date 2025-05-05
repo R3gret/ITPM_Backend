@@ -14,8 +14,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Authorization']  // Important for JWT in response headers
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting (same as first code)
@@ -46,7 +45,7 @@ app.get('/health', (req, res) => {
 });
 
   // API routes
-  app.use('/api/auth', require('./src/routes/auth'));
+
   app.use('/api/users', require('./src/routes/users'));
 
 // 404 handler (same as first code)
