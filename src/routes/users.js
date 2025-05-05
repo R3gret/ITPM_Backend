@@ -53,69 +53,71 @@ const validateLogin = [
 ];
 
 // Registration Route
+// Registration Route
 router.post('/register', authLimiter, validateRegister, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: errors.array() 
-    });
-  }
-
-  const { username, password, email } = req.body;
-  let connection;
-
-  try {
-    connection = await db.promisePool.getConnection();
-    
-    // Check for existing user
-    const [existing] = await connection.query(
-      'SELECT id FROM users WHERE username = ? OR email = ?',
-      [username, email]
-    );
-
-    if (existing.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: 'Username or email already exists'
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: errors.array() 
       });
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create user
-    const [result] = await connection.query(
-      'INSERT INTO users (username, password, email, type) VALUES (?, ?, ?, ?)',
-      [username, hashedPassword, email, 'user'] // Default type
-    );
-
-    // Generate token
-    const token = jwt.sign(
-      { id: result.insertId, username, type: 'user' },
-      process.env.JWT_SECRET,
-      JWT_CONFIG
-    );
-
-    return res.status(201).json({
-      success: true,
-      token,
-      user: { id: result.insertId, username, email, type: 'user' }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Internal server error' 
-    });
-  } finally {
-    if (connection) connection.release();
-  }
-});
-
-// Login Route (add this to your existing auth routes)
-router.post('/login', authLimiter, validateLogin, async (req, res) => {
+  
+    const { username, password, email } = req.body;
+    let connection;
+  
+    try {
+      connection = await db.promisePool.getConnection();
+      
+      // Check for existing user (updated to use user_id)
+      const [existing] = await connection.query(
+        'SELECT user_id FROM users WHERE username = ? OR email = ?',
+        [username, email]
+      );
+  
+      if (existing.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Username or email already exists'
+        });
+      }
+  
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+  
+      // Create user
+      const [result] = await connection.query(
+        'INSERT INTO users (username, password, email, type) VALUES (?, ?, ?, ?)',
+        [username, hashedPassword, email, 'user']
+      );
+  
+      // Generate token (using user_id as id)
+      const token = jwt.sign(
+        { id: result.insertId, username, type: 'user' },
+        process.env.JWT_SECRET,
+        JWT_CONFIG
+      );
+  
+      return res.status(201).json({
+        success: true,
+        token,
+        user: { id: result.insertId, username, email, type: 'user' }
+      });
+  
+    } catch (error) {
+      console.error('Registration error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message // Added for debugging
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+  
+  // Login Route
+  router.post('/login', authLimiter, validateLogin, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ 
@@ -130,9 +132,9 @@ router.post('/login', authLimiter, validateLogin, async (req, res) => {
     try {
       connection = await db.promisePool.getConnection();
       
-      // Find user by username
+      // Find user by username (updated to use user_id as id)
       const [users] = await connection.query(
-        'SELECT id, username, password, type FROM users WHERE username = ?',
+        'SELECT user_id as id, username, password, type FROM users WHERE username = ?',
         [username]
       );
   
@@ -180,11 +182,11 @@ router.post('/login', authLimiter, validateLogin, async (req, res) => {
       console.error('Login error:', error);
       return res.status(500).json({ 
         success: false,
-        message: 'Internal server error' 
+        message: 'Internal server error',
+        error: error.message // Added for debugging
       });
     } finally {
       if (connection) connection.release();
     }
   });
-
 module.exports = router;
