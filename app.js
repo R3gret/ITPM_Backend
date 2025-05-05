@@ -14,8 +14,12 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // For legacy browsers
 }));
+
+// Explicitly handle preflight requests
+app.options('*', cors());
 
 // Rate limiting (same as first code)
 const limiter = rateLimit({
