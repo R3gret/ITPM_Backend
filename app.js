@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security middlewares (same as first code)
+// Security middlewares
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -17,7 +17,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting (same as first code)
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -28,14 +28,14 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Logging (same as first code)
+// Logging
 app.use(morgan('combined'));
 
-// Body parsing (same as first code)
+// Body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// Health check endpoint (same as first code)
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy',
@@ -44,11 +44,19 @@ app.get('/health', (req, res) => {
   });
 });
 
-  // API routes
+// API routes
+app.use('/api/users', require('./src/routes/users'));
 
-  app.use('/api/users', require('./src/routes/users'));
+// Serve static files from React build directory
+app.use(express.static(path.join(__dirname, '../dist')));
 
-// 404 handler (same as first code)
+// Handle React routing - return all requests to React app
+// This should come AFTER API routes but BEFORE 404 handler
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+// 404 handler - will only trigger if no other routes match
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Not found',
@@ -58,7 +66,7 @@ app.use((req, res) => {
   });
 });
 
-// Error handler (same as first code)
+// Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', {
     message: err.message,
@@ -75,14 +83,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server (same as first code)
+// Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`CORS allowed origin: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 });
 
-// Handle unhandled promise rejections (same as first code)
+// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', {
     error: err.message,
@@ -92,7 +100,7 @@ process.on('unhandledRejection', (err) => {
   server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions (same as first code)
+// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', {
     error: err.message,
