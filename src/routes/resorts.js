@@ -6,32 +6,39 @@ const { body, validationResult } = require('express-validator');
 
 
 // Get user density for resorts
+// Add this near your other routes
 router.get('/user-density', async (req, res) => {
+    let connection;
     try {
-      // Query to count users within 500m of each resort
-      const [results] = await db.promisePool.query(`
+      connection = await db.promisePool.getConnection();
+      
+      // Query to count users near each resort
+      const [results] = await connection.query(`
         SELECT 
           r.resort_id,
-          r.name,
-          r.lat,
-          r.longitude,
-          COUNT(ud.id) AS user_count
+          COUNT(ul.user_id) as user_count
         FROM resorts r
-        LEFT JOIN user_distance ud ON 
+        LEFT JOIN user_distance ul ON 
           ST_Distance_Sphere(
             POINT(r.longitude, r.lat),
-            POINT(ud.longitude, ud.latitude)
-          ) <= 500
+            POINT(ul.longitude, ul.latitude)
+          ) <= 150  -- 150 meter radius
         GROUP BY r.resort_id
       `);
-      
-      res.json({
+  
+      return res.json({
         success: true,
         data: results
       });
+  
     } catch (error) {
       console.error('Error fetching user density:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching user density data'
+      });
+    } finally {
+      if (connection) connection.release();
     }
   });
 
