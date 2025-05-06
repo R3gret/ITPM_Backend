@@ -47,7 +47,9 @@ app.get('/health', (req, res) => {
 
   // API routes
 
-  app.use('/users', require('./src/routes/users'));
+  // Mount under both paths
+app.use('/users', require('./src/routes/users'));
+app.use('/api/users', require('./src/routes/users'));
   app.use('/api/resorts', require('./src/routes/resorts'));
   const smsRouter = require('./src/routes/sms');
 app.use('/api/sms', smsRouter); // Make sure this line exists
