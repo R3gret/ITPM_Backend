@@ -52,6 +52,60 @@ const validateLogin = [
   body('password').notEmpty().withMessage('Password is required')
 ];
 
+// Get all users route (protected, admin-only)
+router.get('/users', async (req, res) => {
+    // Verify JWT token first
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authorization token required'
+      });
+    }
+  
+    let connection;
+    try {
+      // Verify token and check if user is admin
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only admin users can access this endpoint'
+        });
+      }
+  
+      connection = await db.promisePool.getConnection();
+      
+      // Fetch all users (excluding passwords for security)
+      const [users] = await connection.query(
+        'SELECT user_id as id, username, email, type, created_at FROM users'
+      );
+  
+      return res.json({
+        success: true,
+        users
+      });
+  
+    } catch (error) {
+      console.error('Get users error:', error);
+      
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token'
+        });
+      }
+  
+      return res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
 // Registration Route
 // Registration Route
 router.post('/register', authLimiter, validateRegister, async (req, res) => {
