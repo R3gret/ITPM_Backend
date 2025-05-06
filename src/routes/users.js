@@ -78,7 +78,7 @@ router.get('/', async (req, res) => {
       
       // Fetch all users (excluding passwords for security)
       const [users] = await connection.query(
-        'SELECT user_id as id, username, email, type FROM users'
+        'SELECT user_id as id, username, email, type, created_at FROM users'
       );
   
       return res.json({
