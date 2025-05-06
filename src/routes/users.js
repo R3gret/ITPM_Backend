@@ -52,6 +52,118 @@ const validateLogin = [
   body('password').notEmpty().withMessage('Password is required')
 ];
 
+// Update user route (admin only)
+router.put('/:id', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Authorization token required' });
+    }
+  
+    let connection;
+    try {
+      // Verify token and check if user is admin
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Only admin users can update users' });
+      }
+  
+      const { id } = req.params;
+      const { username, email, type, password } = req.body;
+  
+      connection = await db.promisePool.getConnection();
+  
+      // Check if user exists
+      const [users] = await connection.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
+      if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+  
+      let updateFields = [];
+      let updateValues = [];
+  
+      if (username) {
+        updateFields.push('username = ?');
+        updateValues.push(username);
+      }
+      if (email) {
+        updateFields.push('email = ?');
+        updateValues.push(email);
+      }
+      if (type) {
+        updateFields.push('type = ?');
+        updateValues.push(type);
+      }
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        updateFields.push('password = ?');
+        updateValues.push(hashedPassword);
+      }
+  
+      if (updateFields.length === 0) {
+        return res.status(400).json({ success: false, message: 'No fields to update' });
+      }
+  
+      updateValues.push(id); // For WHERE clause
+  
+      await connection.query(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE user_id = ?`,
+        updateValues
+      );
+  
+      return res.json({ success: true, message: 'User updated successfully' });
+  
+    } catch (error) {
+      console.error('Update user error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+  
+  // Delete user route (admin only)
+  router.delete('/:id', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Authorization token required' });
+    }
+  
+    let connection;
+    try {
+      // Verify token and check if user is admin
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Only admin users can delete users' });
+      }
+  
+      const { id } = req.params;
+      connection = await db.promisePool.getConnection();
+  
+      // Check if user exists
+      const [users] = await connection.query('SELECT user_id FROM users WHERE user_id = ?', [id]);
+      if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+  
+      await connection.query('DELETE FROM users WHERE user_id = ?', [id]);
+  
+      return res.json({ success: true, message: 'User deleted successfully' });
+  
+    } catch (error) {
+      console.error('Delete user error:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
 // Get all users route (protected, admin-only)
 router.get('/', async (req, res) => {
     // Verify JWT token first
