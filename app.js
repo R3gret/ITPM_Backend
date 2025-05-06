@@ -47,9 +47,10 @@ app.get('/health', (req, res) => {
 
   // API routes
 
-  app.use('/api/users', require('./src/routes/users'));
+  app.use('/users', require('./src/routes/users'));
   app.use('/api/resorts', require('./src/routes/resorts'));
-  app.use('/api', require('./src/routes/sms'));
+  const smsRouter = require('./src/routes/sms');
+app.use('/api/sms', smsRouter); // Make sure this line exists
 
 // 404 handler (same as first code)
 app.use((req, res) => {
