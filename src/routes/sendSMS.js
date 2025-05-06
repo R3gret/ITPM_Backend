@@ -1,28 +1,17 @@
-// pages/api/sendSMS.js
-import axios from 'axios';
+// src/routes/sms.js
+const express = require('express');
+const router = express.Router();
+const axios = require('axios');
 
-export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ message: `Method ${req.method} not allowed` });
-  }
-
+router.post('/sendSMS', async (req, res) => {
   try {
-    // Your SMS API credentials (consider using environment variables)
     const username = 'ZJ62BX';
     const password = 'ua9sk3r7vjjgaw';
-    
-    // Extract data from the request
     const { message, phoneNumbers } = req.body;
 
-    // Make request to the SMS API
     const response = await axios.post(
       'https://api.sms-gate.app/3rdparty/v1/message',
-      {
-        message,
-        phoneNumbers
-      },
+      { message, phoneNumbers },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -31,21 +20,19 @@ export default async function handler(req, res) {
       }
     );
 
-    // Forward the response from SMS API to the client
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Proxy error:', error);
     
-    // Handle axios errors
     if (error.response) {
-      // Forward the error response from the SMS API
       res.status(error.response.status).json(error.response.data);
     } else {
-      // Generic error response
       res.status(500).json({ 
         message: 'Internal server error',
         details: error.message 
       });
     }
   }
-}
+});
+
+module.exports = router;
