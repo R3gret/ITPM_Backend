@@ -53,7 +53,7 @@ const validateLogin = [
 ];
 
 // Get all users route (protected, admin-only)
-router.get('/users', async (req, res) => {
+router.get('/', async (req, res) => {
     // Verify JWT token first
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
