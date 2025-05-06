@@ -3,6 +3,38 @@ const router = express.Router();
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
 
+
+
+// Get user density for resorts
+router.get('/user-density', async (req, res) => {
+    try {
+      // Query to count users within 500m of each resort
+      const [results] = await db.promisePool.query(`
+        SELECT 
+          r.resort_id,
+          r.name,
+          r.lat,
+          r.longitude,
+          COUNT(ud.id) AS user_count
+        FROM resorts r
+        LEFT JOIN user_distance ud ON 
+          ST_Distance_Sphere(
+            POINT(r.longitude, r.lat),
+            POINT(ud.longitude, ud.latitude)
+          ) <= 500
+        GROUP BY r.resort_id
+      `);
+      
+      res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      console.error('Error fetching user density:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
 // Get all resorts
 router.get('/', async (req, res) => {
   try {
@@ -183,34 +215,6 @@ router.post('/user-location',
     }
   );
   
-  // Get user density for resorts
-  router.get('/user-density', async (req, res) => {
-    try {
-      // Query to count users within 500m of each resort
-      const [results] = await db.promisePool.query(`
-        SELECT 
-          r.resort_id,
-          r.name,
-          r.lat,
-          r.longitude,
-          COUNT(ud.id) AS user_count
-        FROM resorts r
-        LEFT JOIN user_distance ud ON 
-          ST_Distance_Sphere(
-            POINT(r.longitude, r.lat),
-            POINT(ud.longitude, ud.latitude)
-          ) <= 500
-        GROUP BY r.resort_id
-      `);
-      
-      res.json({
-        success: true,
-        data: results
-      });
-    } catch (error) {
-      console.error('Error fetching user density:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  });
+
 
 module.exports = router;
